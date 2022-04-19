@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.zerock.mapper.KnwShrReplyMapper">
+
+	<insert id="insert">
+
+		insert into TBL_REPLY_KNW_SHR (rno, bno, reply, replyer)
+		values (seq_reply.nextval, #{bno}, #{reply}, #{replyer})
+
+	</insert>
+
+	<select id="read" resultType="org.zerock.domain.ReplyVO">
+
+		select * from TBL_REPLY_KNW_SHR where rno =
+		#{rno}
+
+	</select>
+
+
+	<delete id="delete">
+
+		delete from TBL_REPLY_KNW_SHR where rno = #{rno}
+
+	</delete>
+
+	<update id="update">
+
+		update TBL_REPLY_KNW_SHR set reply = #{reply}, updatedate =
+		sysdate where rno =
+		#{rno}
+
+	</update>
+
+
+	<!-- <select id="getListWithPaging" resultType="org.zerock.domain.ReplyVO"> 
+		select rno, bno, reply, replyer, replyDate, updatedate from TBL_REPLY_KNW_SHR where 
+		bno = #{bno} order by rno asc </select -->
+
+<select id="getListWithPaging"
+		resultType="org.zerock.domain.ReplyVO">
+
+  <![CDATA[
+ select  rno, bno, reply, replyer, replydate, updatedate, selectedyn, likes
+ from 
+   (
+    select /*+INDEX(TBL_REPLY_KNW_SHR idx_reply) */ 
+      rownum rn,  rno, bno, reply, replyer, replyDate, updatedate, selectedyn, likes
+    from TBL_REPLY_KNW_SHR
+    where bno =  #{bno}
+    and rno > 0
+    and rownum <= #{cri.pageNum} * #{cri.amount}
+   ) where rn > (#{cri.pageNum} -1) * #{cri.amount}
+]]>
+
+	</select>
+
+
+	<select id="getCountByBno" resultType="int">
+<![CDATA[
+select count(rno) from TBL_REPLY_KNW_SHR where bno = #{bno}
+]]>
+	</select>
+
+	
+	<select id="checkReplyLike" resultType="int">
+    	SELECT COUNT(*) AS LIKE_CNT
+    	  FROM TBL_REPLY_LIKE 
+    	 WHERE RNO = #{rno}
+    	   AND USER_ID = #{replyer}
+    </select>
+    
+    <insert id="insertReplyLike">
+        INSERT INTO TBL_REPLY_LIKE (RNO, USER_ID) VALUES (#{rno}, #{replyer})
+    </insert>
+    
+    <delete id="deleteReplyLike">
+        DELETE FROM TBL_REPLY_LIKE
+         WHERE RNO = #{rno} 
+           AND USER_ID = #{replyer}
+    </delete>
+    
+    <select id="getReplyLike" resultType="int">
+    	SELECT LIKES
+    	  FROM TBL_REPLY_KNW_SHR 
+    	 WHERE RNO = #{rno}
+    </select>
+
+	<update id="updateReplyLikes">
+		UPDATE TBL_REPLY_KNW_SHR 
+		   SET LIKES = LIKES + #{likes}
+		 WHERE RNO = #{rno}
+	</update>
+	
+	<update id="updateSelectedAns">
+		UPDATE TBL_REPLY_KNW_SHR 
+		   SET SELECTEDYN = 'Y'
+		 WHERE RNO = #{rno}
+	</update>
+
+</mapper>

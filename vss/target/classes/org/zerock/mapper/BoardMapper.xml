@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.zerock.mapper.BoardMapper">
+
+	<sql id="criteria">
+		<trim prefix="(" suffix=") AND " prefixOverrides="OR">
+			<foreach item='type' collection="typeArr">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'T'.toString()">
+							title like '%'||#{keyword}||'%'
+						</when>
+						<when test="type == 'C'.toString()">
+							content like '%'||#{keyword}||'%'
+						</when>
+						<when test="type == 'W'.toString()">
+							writer like '%'||#{keyword}||'%'
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+
+	<select id="getList" resultType="org.zerock.domain.BoardVO">
+	<![CDATA[
+		select * from tbl_board where
+		bno > 0 and rownum <= 100
+		]]>
+	</select>
+
+	<insert id="insert">
+		INSERT INTO TBL_BOARD (BNO,
+		                       TITLE,
+		                       CONTENT,
+		                       WRITER,
+		                       CATEGORY1,
+		                       CATEGORY2,
+		                       CATEGORY3)
+		     VALUES (SEQ_BOARD.NEXTVAL, 
+		     		#{title}, 
+		     		#{content}, 
+		     		#{writer}, 
+		     		#{category1},    
+		     		#{category2}, 
+		     		#{category3})
+	</insert>
+
+	<insert id="insertSelectKey">
+		<selectKey keyProperty="bno" order="BEFORE" resultType="long">
+			select seq_board.nextval from dual
+		</selectKey>
+		INSERT INTO TBL_BOARD (BNO,
+				                       TITLE,
+				                       CONTENT,
+				                       WRITER)
+				     VALUES (#{bno}, 
+				     		#{title}, 
+				     		<!-- REPLACE(REPLACE(#{content}, CHR(10),''),CHR(13),''),  -->
+				     		#{content}, 
+				     		#{writer})
+	</insert>
+	
+	<update id="updateCategory">
+		UPDATE TBL_BOARD SET 
+		<trim suffixOverrides=",">
+			<if test='category1 != null'>
+				CATEGORY1 = #{category1},
+		    </if>
+		    <if test='category2 != null'>
+		        CATEGORY2 = #{category2},
+		    </if>
+		    <if test='category3 != null'>
+		        CATEGORY3 = #{category3},
+		    </if>
+		    <if test='category1 == null'>
+		       CATEGORY1 = null,
+		    </if>
+		    <if test='category2 == null'>
+		        CATEGORY2 = null,
+		    </if>
+		    <if test='category3 == null'>
+		        CATEGORY3 = null,
+		    </if> 
+	    </trim>
+	    WHERE BNO = #{bno}
+	</update>
+
+	<select id="read" resultType="org.zerock.domain.BoardVO">
+		select * from tbl_board where bno = #{bno}
+	</select>
+	
+	<select id="getForMod" resultType="org.zerock.domain.BoardVO">
+	    SELECT BNO,
+		       TITLE,
+		       WRITER,
+		       CATEGORY1,
+		       CATEGORY2,
+		       CATEGORY3,
+		       REGDATE,
+		       UPDATEDATE,
+		       <!-- REPLACE(REPLACE(CONTENT, CHR(10),' '),CHR(13),' ') AS CONTENT, -->
+		       CONTENT, 
+		       LIKES,
+		       VIEWS
+		  FROM TBL_BOARD
+		 WHERE BNO = #{bno}		
+	</select>
+
+
+	<delete id="delete">
+		delete tbl_board where bno = #{bno}
+	</delete>
+
+	<update id="update" parameterType="org.zerock.domain.BoardVO">
+		UPDATE TBL_BOARD
+		   SET TITLE = #{title},
+		       CONTENT=#{content},
+		       WRITER = #{writer},
+			   <if test='category1 != null'>
+			       CATEGORY1 = #{category1},
+			   </if>
+			   <if test='category2 != null'>
+			       CATEGORY2 = #{category2},
+			   </if>
+			   <if test='category3 != null'>
+			       CATEGORY3 = #{category3},
+			   </if>
+			   <if test='category1 == null'>
+			       CATEGORY1 = null,
+			   </if>
+			   <if test='category2 == null'>
+			       CATEGORY2 = null,
+			   </if>
+			   <if test='category3 == null'>
+			       CATEGORY3 = null,
+			   </if>
+		       UPDATEDATE = sysdate
+		 WHERE BNO = #{bno} 
+	</update>
+
+
+
+
+	<select id="getListWithPaging" resultType="org.zerock.domain.BoardVO">
+		  <![CDATA[
+		  select 
+		    a.bno, 
+		    a.category1, 
+		    a.category2, 
+		    a.category3, 
+		    a.title, 
+		    a.content, 
+		    a.writer, 
+		    nvl(b.reply_cnt,0) as replycnt, 
+		    a.likes,
+		    a.views,
+		    a.regdate, 
+		    a.updatedate
+		  from 
+		      (
+		      select /*+INDEX_DESC(tbl_board pk_board) */
+		        rownum rn, bno, category1, category2, category3, title, content, likes, views, writer, regdate, updatedate
+		      from 
+		        tbl_board
+		      where 
+		  ]]>
+		  <include refid="criteria"></include> 
+		  <![CDATA[    
+		      rownum <= #{pageNum} * #{amount}
+		      ) a left outer join (
+		      	select bno, count(*) as reply_cnt from tbl_reply
+			     group by bno) b on a.bno = b.bno
+		  where rn > (#{pageNum} -1) * #{amount}   
+		  ]]>
+		  <if test='libCls != null and !libCls.equals("")'>
+		  AND (CATEGORY1 = #{libCls} OR CATEGORY2 = #{libCls} OR CATEGORY3 = #{libCls})
+		  </if> 
+		  <if test='sortCls != null and !sortCls.equals("")'>
+		  ORDER BY ${sortCls} DESC
+		  </if> 
+	</select>
+
+
+
+
+	<select id="getTotalCount" resultType="int">
+		select count(*) from tbl_board where
+
+		<include refid="criteria"></include>
+
+		bno > 0
+
+	</select>
+
+	<update id="updateReplyCnt">
+		<!-- update tbl_board set replycnt = replycnt + #{amount} where bno = #{bno} -->
+	</update>
+	
+	<insert id="createBoardLike">
+       INSERT INTO TBL_BOARD_LIKE (BNO, USER_ID) VALUES (#{bno}, #{userid})
+    </insert>
+
+    <delete id="deleteBoardLike">
+        DELETE FROM TBL_BOARD_LIKE
+         WHERE BNO = #{bno} 
+           AND USER_ID = #{userid}
+    </delete>
+
+    <update id="updateBoardLike">   
+        UPDATE TBL_BOARD 
+		   SET LIKES = (SELECT COUNT(*) FROM TBL_BOARD_LIKE WHERE BNO = #{bno}) 
+		 WHERE BNO = #{bno}
+    </update>
+
+    <select id="getBoardLike" resultType="int">
+        SELECT LIKES FROM TBL_BOARD WHERE BNO = #{bno}
+    </select>
+    
+    <select id="checkLike" resultType="int">
+    	SELECT COUNT(*) AS LIKE_CNT
+    	  FROM TBL_BOARD_LIKE 
+    	 WHERE BNO = #{bno}
+    	   AND USER_ID = #{userid}
+    </select>
+    
+    <update id="updateViews">
+		update tbl_board set views = views+1 where bno = #{bno}
+	</update>
+    
+
+</mapper>

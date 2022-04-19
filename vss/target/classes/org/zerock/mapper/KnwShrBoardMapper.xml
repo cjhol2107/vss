@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.zerock.mapper.KnwShrBoardMapper">
+
+	<sql id="knwShr_criteria">
+		<trim prefix="(" suffix=") AND " prefixOverrides="OR">
+			<foreach item='type' collection="typeArr">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'T'.toString()">
+							title like '%'||#{keyword}||'%'
+						</when>
+						<when test="type == 'C'.toString()">
+							content like '%'||#{keyword}||'%'
+						</when>
+						<when test="type == 'W'.toString()">
+							writer like '%'||#{keyword}||'%'
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+
+	<select id="knwShr_getList" resultType="org.zerock.domain.BoardVO">
+	<![CDATA[
+		select * from TBL_BOARD_KNW_SHR where
+		bno > 0 and rownum <= 100
+		]]>
+	</select>
+
+	<insert id="knwShr_insert">
+		INSERT INTO TBL_BOARD_KNW_SHR (BNO,
+		                       TITLE,
+		                       CONTENT,
+		                       WRITER,
+		                       CATEGORY1,
+		                       CATEGORY2,
+		                       CATEGORY3)
+		     VALUES (SEQ_BOARD.NEXTVAL, 
+		     		#{title}, 
+		     		#{content}, 
+		     		#{writer}, 
+		     		#{category1},    
+		     		#{category2}, 
+		     		#{category3})
+	</insert>
+
+	<insert id="knwShr_insertSelectKey">
+		<selectKey keyProperty="bno" order="BEFORE" resultType="long">
+			select seq_board.nextval from dual
+		</selectKey>
+		INSERT INTO TBL_BOARD_KNW_SHR (BNO,
+				                       TITLE,
+				                       CONTENT,
+				                       WRITER)
+				     VALUES (#{bno}, 
+				     		#{title}, 
+				     		<!-- REPLACE(REPLACE(#{content}, CHR(10),''),CHR(13),''),  -->
+				     		#{content}, 
+				     		#{writer})
+	</insert>
+	
+	<update id="knwShr_updateCategory">
+		UPDATE TBL_BOARD_KNW_SHR SET 
+		<trim suffixOverrides=",">
+			<if test='category1 != null'>
+				CATEGORY1 = #{category1},
+		    </if>
+		    <if test='category2 != null'>
+		        CATEGORY2 = #{category2},
+		    </if>
+		    <if test='category3 != null'>
+		        CATEGORY3 = #{category3},
+		    </if>
+		    <if test='category1 == null'>
+		       CATEGORY1 = null,
+		    </if>
+		    <if test='category2 == null'>
+		        CATEGORY2 = null,
+		    </if>
+		    <if test='category3 == null'>
+		        CATEGORY3 = null,
+		    </if> 
+	    </trim>
+	    WHERE BNO = #{bno}
+	</update>
+
+	<select id="knwShr_read" resultType="org.zerock.domain.BoardVO">
+		select * from TBL_BOARD_KNW_SHR where bno = #{bno}
+	</select>
+	
+	<select id="knwShr_getForMod" resultType="org.zerock.domain.BoardVO">
+	    SELECT BNO,
+		       TITLE,
+		       WRITER,
+		       CATEGORY1,
+		       CATEGORY2,
+		       CATEGORY3,
+		       REGDATE,
+		       UPDATEDATE,
+		       <!-- REPLACE(REPLACE(CONTENT, CHR(10),' '),CHR(13),' ') AS CONTENT, -->
+		       CONTENT, 
+		       VIEWS
+		  FROM TBL_BOARD_KNW_SHR
+		 WHERE BNO = #{bno}		
+	</select>
+
+
+	<delete id="knwShr_delete">
+		delete TBL_BOARD_KNW_SHR where bno = #{bno}
+	</delete>
+
+	<update id="knwShr_update" parameterType="org.zerock.domain.BoardVO">
+		UPDATE TBL_BOARD_KNW_SHR
+		   SET TITLE = #{title},
+		       CONTENT=#{content},
+		       WRITER = #{writer},
+			   <if test='category1 != null'>
+			       CATEGORY1 = #{category1},
+			   </if>
+			   <if test='category2 != null'>
+			       CATEGORY2 = #{category2},
+			   </if>
+			   <if test='category3 != null'>
+			       CATEGORY3 = #{category3},
+			   </if>
+			   <if test='category1 == null'>
+			       CATEGORY1 = null,
+			   </if>
+			   <if test='category2 == null'>
+			       CATEGORY2 = null,
+			   </if>
+			   <if test='category3 == null'>
+			       CATEGORY3 = null,
+			   </if>
+		       UPDATEDATE = sysdate
+		 WHERE BNO = #{bno} 
+	</update>
+
+
+
+
+	<select id="knwShr_getListWithPaging" resultType="org.zerock.domain.BoardVO">
+		  <![CDATA[
+		  select 
+		    a.bno, 
+		    a.category1, 
+		    a.category2, 
+		    a.category3, 
+		    a.title, 
+		    a.content, 
+		    a.writer, 
+		    nvl(b.reply_cnt,0) as replycnt, 
+		    a.views,
+		    a.regdate, 
+		    a.updatedate
+		  from 
+		      (
+		      select /*+INDEX_DESC(TBL_BOARD_KNW_SHR pk_board) */
+		        rownum rn, bno, category1, category2, category3, title, content, views, writer, regdate, updatedate
+		      from 
+		        TBL_BOARD_KNW_SHR
+		      where 
+		  ]]>
+		  <include refid="knwShr_criteria"></include> 
+		  <![CDATA[    
+		      rownum <= #{pageNum} * #{amount}
+		      ) a left outer join (
+		      	select bno, count(*) as reply_cnt from tbl_reply
+			     group by bno) b on a.bno = b.bno
+		  where rn > (#{pageNum} -1) * #{amount}   
+		  ]]>
+		  <if test='libCls != null and !libCls.equals("")'>
+		  AND (CATEGORY1 = #{libCls} OR CATEGORY2 = #{libCls} OR CATEGORY3 = #{libCls})
+		  </if> 
+		  <if test='sortCls != null and !sortCls.equals("")'>
+		  ORDER BY ${sortCls} DESC
+		  </if> 
+	</select>
+
+
+
+
+	<select id="knwShr_getTotalCount" resultType="int">
+		select count(*) from TBL_BOARD_KNW_SHR where
+
+		<include refid="knwShr_criteria"></include>
+
+		bno > 0
+
+	</select>
+
+	<update id="knwShr_updateReplyCnt">
+		<!-- update TBL_BOARD_KNW_SHR set replycnt = replycnt + #{amount} where bno = #{bno} -->
+	</update>
+	
+<!-- 	<insert id="knwShr_createBoardLike">
+       INSERT INTO TBL_BOARD_KNW_SHR_LIKE (BNO, USER_ID) VALUES (#{bno}, #{userid})
+    </insert>
+
+    <delete id="knwShr_deleteBoardLike">
+        DELETE FROM TBL_BOARD_KNW_SHR_LIKE
+         WHERE BNO = #{bno} 
+           AND USER_ID = #{userid}
+    </delete>
+
+    <update id="knwShr_updateBoardLike">   
+        UPDATE TBL_BOARD_KNW_SHR 
+		   SET LIKES = (SELECT COUNT(*) FROM TBL_BOARD_KNW_SHR_LIKE WHERE BNO = #{bno}) 
+		 WHERE BNO = #{bno}
+    </update>
+
+    <select id="knwShr_getBoardLike" resultType="int">
+        SELECT LIKES FROM TBL_BOARD_KNW_SHR WHERE BNO = #{bno}
+    </select>
+    
+    <select id="knwShr_checkLike" resultType="int">
+    	SELECT COUNT(*) AS LIKE_CNT
+    	  FROM TBL_BOARD_KNW_SHR_LIKE 
+    	 WHERE BNO = #{bno}
+    	   AND USER_ID = #{userid}
+    </select>
+    -->
+    
+    <update id="knwShr_updateViews">
+		update TBL_BOARD_KNW_SHR set views = views+1 where bno = #{bno}
+	</update>
+    
+
+</mapper>
