@@ -67,7 +67,7 @@
 				- <c:out value="${pageMaker.cri.libCls}"/>
 			</c:if>
 			<div class="subtitle"> 기능 단위 코드를 공유하는 곳입니다.</div>
-			<div class="subtitle2"> 함수 또는 기능단위 스크립트를 작성해주세요 :)</div>
+			<div class="subtitle2"> 함수 또는 기능단위 스크립트를 작성해주세요. :)</div>
 		</div>
 	</div>
 </div>
