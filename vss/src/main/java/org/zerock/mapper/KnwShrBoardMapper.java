@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Param;
 import org.zerock.domain.BoardAttachVO;
-import org.zerock.domain.BoardLikeVO;
 import org.zerock.domain.BoardVO;
 import org.zerock.domain.Criteria;
 
