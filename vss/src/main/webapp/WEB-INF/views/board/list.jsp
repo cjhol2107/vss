@@ -51,11 +51,26 @@
 	font-weight: 100;
 }
 
+.sortClsBtn{
+	font-family: 'Nanum Gothic', sans-serif;
+	font-weight: bold;
+	color:white;
+	background-color: #1266FF;
+	width:55px;
+	height:25px;
+	font-size: 14px;
+	padding-left:5px;   
+	border-radius:10px;
+	border: solid 1px #1266FF;
+}
+
 .boardlist-Font2{
 	font-family: 'Nanum Gothic', sans-serif;
 	font-weight: 100;
 	font-size : 12px;
 	color:gray;
+	border-radius: 12px;
+	
 }
 
 </style>     
@@ -66,7 +81,7 @@
 			<c:if test="${pageMaker.cri.libCls != null && !pageMaker.cri.libCls.equals('')}">
 				- <c:out value="${pageMaker.cri.libCls}"/>
 			</c:if>
-			<div class="subtitle"> 기능 단위 코드를 공유하는 곳입니다.</div>
+			<div class="subtitle"> 기능 단위 코드를 공유하는 곳입니다.!</div>
 			<div class="subtitle2"> 함수 또는 기능단위 스크립트를 작성해주세요. :)</div>
 		</div>
 	</div>
@@ -74,9 +89,13 @@
 
 <div class="row">
 	<div class="list-criteria">
-		<a class="sortCls" data-value="likes">추천순</a>
-		<a class="sortCls" data-value="views">조회순</a>
-		<a class="sortCls" data-value="regdate">최신순</a>
+		<!-- <button type="button" class="sortCls sortClsBtn" data-value="likes">추천순</button>
+		<button type="button" class="sortCls sortClsBtn" data-value="views">조회순</button>
+		<button type="button" class="sortCls sortClsBtn" data-value="regdate">최신순</button> -->
+		
+		<a  class="sortCls" data-value="likes">추천순</a>
+		<a  class="sortCls" data-value="views">조회순</a>
+		<a  class="sortCls" data-value="regdate">최신순</a>
 	</div>
 </div>
 
